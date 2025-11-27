@@ -24,7 +24,10 @@ if (isset($_POST['add_user'])) {
 
     <div class="glass-panel wide">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h1>Gestion Badges RFID</h1>
+            <div>
+                <h1>Gestion Badges RFID</h1>
+                <p style="margin:5px 0 0 0; color:#aaa; font-size:0.9em;">Connecté en tant que <strong style="color:#4CAF50;"><?php echo htmlspecialchars($_SESSION['admin_username'] ?? 'Admin'); ?></strong></p>
+            </div>
             <a href="logout.php" style="color:#ff6b6b; border:1px solid #ff6b6b; padding:5px 15px; border-radius:20px;">Déconnexion</a>
         </div>
         
@@ -50,18 +53,25 @@ if (isset($_POST['add_user'])) {
             </thead>
             <tbody>
                 <?php
-                $users = $pdo->query("SELECT * FROM users_rfid ORDER BY id DESC");
-                while($u = $users->fetch()) {
-                    $status_class = ($u['status'] == 'actif') ? "status-actif" : "status-attente";
-                    $status_text = ($u['status'] == 'actif') ? "ACTIF" : "EN ATTENTE";
-                    $uid_display = $u['rfid_uid'] ? "<span style='font-family:monospace; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;'>".$u['rfid_uid']."</span>" : "<span style='color:#666'>...</span>";
-                    
-                    echo "<tr>
-                        <td>#{$u['id']}</td>
-                        <td style='font-weight:bold;'>{$u['nom_complet']}</td>
-                        <td>$uid_display</td>
-                        <td class='$status_class'>$status_text</td>
-                    </tr>";
+                try {
+                    $users = $pdo->query("SELECT * FROM users_rfid ORDER BY id DESC");
+                    while($u = $users->fetch()) {
+                        $status_class = ($u['status'] == 'actif') ? "status-actif" : "status-attente";
+                        $status_text = ($u['status'] == 'actif') ? "ACTIF" : "EN ATTENTE";
+                        $uid_display = $u['rfid_uid'] ? "<span style='font-family:monospace; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;'>".$u['rfid_uid']."</span>" : "<span style='color:#666'>...</span>";
+                        
+                        echo "<tr>
+                            <td>#{$u['id']}</td>
+                            <td style='font-weight:bold;'>{$u['nom_complet']}</td>
+                            <td>$uid_display</td>
+                            <td class='$status_class'>$status_text</td>
+                        </tr>";
+                    }
+                } catch (PDOException $e) {
+                    echo "<tr><td colspan='4' style='text-align:center; color:#ff6b6b;'>
+                        Erreur: La table 'users_rfid' n'existe pas. 
+                        <a href='fix_tables.php' style='color:#4CAF50; text-decoration:underline;'>Cliquez ici pour la créer</a>
+                    </td></tr>";
                 }
                 ?>
             </tbody>
