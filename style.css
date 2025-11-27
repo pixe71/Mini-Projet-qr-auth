@@ -1,0 +1,140 @@
+/* style.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    /* Fond noir texturé avec un dégradé subtil */
+    background-color: #111;
+    background-image: 
+        radial-gradient(circle at 50% 50%, #2a2a2a 0%, #000 100%),
+        repeating-linear-gradient(45deg, #1a1a1a 0, #1a1a1a 1px, transparent 0, transparent 50%);
+    background-size: cover, 10px 10px;
+    background-blend-mode: overlay;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+/* Le conteneur effet "Verre" */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.05); /* Blanc très transparent */
+    backdrop-filter: blur(16px);           /* Le flou derrière la vitre */
+    -webkit-backdrop-filter: blur(16px);   /* Pour Safari */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    padding: 40px;
+    width: 100%;
+    max-width: 400px; /* Taille standard pour login/register */
+    text-align: center;
+    color: #fff;
+}
+
+/* Spécifique pour le dashboard qui doit être plus large */
+.glass-panel.wide {
+    max-width: 900px;
+    text-align: left;
+}
+
+h1, h2, h3 {
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+/* Inputs stylisés */
+input[type="text"], 
+input[type="password"] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0 20px;
+    display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px; /* Bords très ronds */
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    outline: none;
+    box-sizing: border-box;
+    transition: 0.3s;
+}
+
+input:focus {
+    border-color: #fff;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Boutons */
+button {
+    background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+    color: #000;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    width: 100%;
+    font-weight: bold;
+    font-size: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Liens */
+a {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: color 0.3s;
+}
+a:hover { color: #fff; }
+
+/* Alertes erreurs/succès */
+.error { color: #ff6b6b; font-weight: bold; margin-bottom: 15px; }
+.success { color: #51cf66; font-weight: bold; margin-bottom: 15px; }
+
+/* Tableaux pour le dashboard */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+th {
+    background: rgba(255, 255, 255, 0.1);
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 1px;
+}
+
+tr:hover { background: rgba(255, 255, 255, 0.05); }
+
+.status-actif { color: #51cf66; font-weight: bold; text-shadow: 0 0 5px rgba(81, 207, 102, 0.5); }
+.status-attente { color: #ff922b; font-style: italic; }
+
+/* QR Code Container */
+.qr-box {
+    background: #fff;
+    padding: 10px;
+    border-radius: 10px;
+    display: inline-block;
+    margin: 20px 0;
+}
