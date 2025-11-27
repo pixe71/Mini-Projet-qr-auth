@@ -19,3 +19,5 @@ DB_USER=rfid
 DB_PASSWORD=iv4VEvp&1C7vb5X&Pz5o
 <br>
 DB_NAME=rfid
+<br>
+DB_PORT=3306
