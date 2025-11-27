@@ -6,7 +6,7 @@ require 'db.php';
 if (!isset($_SESSION['temp_admin_id'])) { header("Location: index.php"); exit(); }
 
 $id = $_SESSION['temp_admin_id'];
-$stmt = $pdo->prepare("SELECT a2f_token, a2f_expiration FROM admins WHERE id = ?");
+$stmt = $pdo->prepare("SELECT username, a2f_token, a2f_expiration FROM admins WHERE id = ?");
 $stmt->execute([$id]);
 $data = $stmt->fetch();
 
@@ -18,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($now <= $data['a2f_expiration']) {
             // SUCCÈS
             $_SESSION['admin_logged'] = true;
+            $_SESSION['admin_username'] = $data['username'];
             unset($_SESSION['temp_admin_id']);
             
             // Nettoyage du token
