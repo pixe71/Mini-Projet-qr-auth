@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS systeme_securite;
-USE systeme_securite;
+CREATE DATABASE IF NOT EXISTS rfid;
+USE rfid;
 
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
