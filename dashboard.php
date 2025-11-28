@@ -28,7 +28,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
 if (isset($_POST['quick_add'])) {
     $nom = htmlspecialchars($_POST['nom']);
     if (!empty($nom)) {
-        $pdo->prepare("INSERT INTO users_rfid (nom_complet, status, ip_address) VALUES (?, 'en_attente', 'Admin Console')")->execute([$nom]);
+        $pdo->prepare("INSERT INTO users_rfid (nom_complet, status) VALUES (?, 'en_attente')")->execute([$nom]);
         header("Location: dashboard.php"); exit();
     }
 }
@@ -211,14 +211,13 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Demandeur</th><th>IP / Date</th><th style="text-align:right;">Décision</th></tr></thead>
+                        <thead><tr><th>Demandeur</th><th>Date</th><th style="text-align:right;">Décision</th></tr></thead>
                         <tbody>
                             <?php while($req = $web_requests->fetch()): ?>
                             <tr>
                                 <td style="font-weight:600;"><?php echo htmlspecialchars($req['nom_complet']); ?></td>
                                 <td class="text-dim">
-                                    <?php echo $req['ip_address']; ?><br>
-                                    <small><?php echo date('d/m H:i', strtotime($req['created_at'])); ?></small>
+                                    <?php echo date('d/m H:i', strtotime($req['created_at'])); ?>
                                 </td>
                                 <td style="text-align:right;">
                                     <a href="?action=approve&id=<?php echo $req['id']; ?>" class="icon-btn btn-ok" title="Valider"><i class="fa-solid fa-check"></i></a>

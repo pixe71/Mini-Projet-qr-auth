@@ -37,12 +37,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         if (!empty($nom_complet)) {
             try {
-                // On utilise l'IP pour le Dashboard
-                $ip = $_SERVER['REMOTE_ADDR']; 
+                $stmt = $pdo->prepare("INSERT INTO users_rfid (nom_complet, status) VALUES (?, ?)");
                 
-                $stmt = $pdo->prepare("INSERT INTO users_rfid (nom_complet, status, ip_address) VALUES (?, 'pending_validation', ?)");
-                
-                if ($stmt->execute([$nom_complet, $ip])) {
+                if ($stmt->execute([$nom_complet, 'en_attente'])) {
                     $success = true;
                     $_SESSION['request_attempts'][] = $current_time;
                     // On vide le POST pour éviter que le champ reste rempli
