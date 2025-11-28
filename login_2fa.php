@@ -82,7 +82,6 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . url
         </div>
 
         <h3 style="letter-spacing: 5px; margin: 10px 0;"><?php echo $data['a2f_token']; ?></h3>
-        <small style="color: #aaa;">Temps restant : <span id="timer" style="font-weight: bold; color: #51cf66;">--:--</span></small>
 
         <form method="post" style="margin-top:20px;">
             <?php if(isset($erreur)) echo "<p class='error'>$erreur</p>"; ?>
@@ -92,3 +91,4 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . url
     </div>
 </body>
 </html>
+
