@@ -171,7 +171,7 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
 
     <header class="glass" style="padding: 15px 30px; border-radius: 15px;">
         <div style="flex-grow:1;">
-            <h1><i class="fa-solid fa-layer-group"></i> NEXUS RFID</h1>
+            <h1><i class="fa-solid fa-layer-group"></i>Gestion RFID</h1>
             <span class="text-dim">Panneau Administrateur Sécurisé</span>
         </div>
         <div style="display:flex; gap:15px;">
