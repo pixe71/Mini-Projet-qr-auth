@@ -2,9 +2,13 @@
 session_start();
 require 'db.php';
 
-// Si déjà connecté, on redirige
+// Si déjà connecté, rediriger selon le type
 if (isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'] === true) {
     header("Location: dashboard.php");
+    exit();
+}
+if (isset($_SESSION['user_logged']) && $_SESSION['user_logged'] === true) {
+    header("Location: calendar.php");
     exit();
 }
 
@@ -14,30 +18,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
 
-    // Récupération de l'admin
+    // D'abord vérifier si c'est un admin
     $stmt = $pdo->prepare("SELECT * FROM admins WHERE username = ?");
     $stmt->execute([$username]);
     $admin = $stmt->fetch();
 
     if ($admin && password_verify($password, $admin['password'])) {
-        // --- LOGIQUE A2F (Authentification à 2 Facteurs) ---
-        // Génération d'un code aléatoire de 6 caractères
+        // C'est un admin - Processus 2FA
         $code_random = strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
         $expiry = date('Y-m-d H:i:s', strtotime('+2 minutes'));
 
-        // On stocke le token dans la BDD pour vérification page suivante
         $upd = $pdo->prepare("UPDATE admins SET a2f_token = ?, a2f_expiration = ? WHERE id = ?");
         $upd->execute([$code_random, $expiry, $admin['id']]);
 
-        // On garde l'ID en session temporaire pour la page login_2fa.php
         $_SESSION['temp_admin_id'] = $admin['id'];
-        
-        // Redirection vers la vérification du code
         header("Location: login_2fa.php");
         exit();
-    } else {
-        $erreur = "Identifiant ou mot de passe incorrect.";
     }
+
+    // Sinon vérifier si c'est un utilisateur normal
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch();
+
+    if ($user && password_verify($password, $user['password'])) {
+        // C'est un utilisateur normal - Connexion directe
+        $_SESSION['user_logged'] = true;
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_username'] = $user['username'];
+        $_SESSION['user_nom_complet'] = $user['nom_complet'];
+        
+        header("Location: calendar.php");
+        exit();
+    }
+
+    // Aucun match
+    $erreur = "Identifiant ou mot de passe incorrect.";
 }
 ?>
 
@@ -46,12 +62,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion Admin</title>
+    <title>Connexion</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        /* --- COPIE EXACTE DU STYLE GLOBAL --- */
         :root {
             --accent: #00d2ff;
             --accent-hover: #3a7bd5;
@@ -107,7 +122,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-size: 1.6rem;
         }
 
-        /* INPUTS MODERNES */
         .input-group {
             position: relative;
             margin-bottom: 20px;
@@ -145,7 +159,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         input:focus + i { color: var(--accent); }
 
-        /* Label flottant */
         input::placeholder { color: transparent; }
         .floating-label {
             position: absolute; left: 45px; top: 50%; transform: translateY(-50%);
@@ -155,7 +168,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             top: -10px; left: 10px; font-size: 0.75rem; color: var(--accent); background: #15151e; padding: 0 5px; border-radius: 4px;
         }
 
-        /* BOUTON */
         button {
             width: 100%; padding: 15px; margin-top: 10px;
             border: none; border-radius: 12px;
@@ -165,7 +177,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 210, 255, 0.4); }
 
-        /* LINKS */
         .links {
             margin-top: 25px;
             display: flex;
@@ -176,13 +187,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .links a { color: rgba(255,255,255,0.4); text-decoration: none; transition: 0.3s; }
         .links a:hover { color: white; }
 
-        /* ALERT ERROR */
         .alert-error {
             background: rgba(255, 75, 75, 0.15);
             border: 1px solid rgba(255, 75, 75, 0.3);
             color: #ff6b6b; padding: 12px; border-radius: 10px;
             font-size: 0.9rem; margin-bottom: 20px;
             display: flex; align-items: center; gap: 10px;
+        }
+
+        .info-box {
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            color: rgba(255,255,255,0.7);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .info-box strong {
+            color: var(--accent);
         }
     </style>
 </head>
@@ -192,9 +217,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <div class="glass-panel">
         <div style="margin-bottom: 20px;">
-            <i class="fa-solid fa-shield-halved" style="font-size: 2.5rem; color: var(--accent);"></i>
+            <i class="fa-solid fa-right-to-bracket" style="font-size: 2.5rem; color: var(--accent);"></i>
         </div>
-        <h2>Espace Admin</h2>
+        <h2>Connexion</h2>
+
+        <div class="info-box">
+            <i class="fa-solid fa-info-circle"></i>
+            <strong>Admins</strong> : Accès dashboard avec 2FA<br>
+            <strong>Utilisateurs</strong> : Accès calendrier direct
+        </div>
 
         <?php if($erreur): ?>
             <div class="alert-error">
@@ -217,13 +248,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             
             <button type="submit">
-                Connexion <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
+                Se connecter <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
             </button>
         </form>
         
         <div class="links">
             <div style="width: 100%; height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0;"></div>
-            <a href="index.php"><i class="fa-solid fa-chevron-left"></i> Retour à l'accueil</a>
+            <a href="register.php"><i class="fa-solid fa-user-plus"></i> Créer un compte</a>
         </div>
     </div>
 

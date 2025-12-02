@@ -20,6 +20,9 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     } elseif ($action === 'reset') {
         // Remet un badge actif en mode "en_attente" pour le reprogrammer
         $pdo->prepare("UPDATE users_rfid SET status = 'en_attente', rfid_uid = NULL WHERE id = ?")->execute([$id]);
+    } elseif ($action === 'delete_reservation') {
+        // Supprimer une réservation (libère le créneau)
+        $pdo->prepare("DELETE FROM reservations WHERE id = ?")->execute([$id]);
     }
     header("Location: dashboard.php"); exit();
 }
@@ -49,12 +52,15 @@ $stats = [
     'total' => $pdo->query("SELECT COUNT(*) FROM users_rfid")->fetchColumn(),
     'active' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='actif'")->fetchColumn(),
     'web_pending' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='pending_validation'")->fetchColumn(),
-    'esp_queue' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='en_attente'")->fetchColumn()
+    'esp_queue' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='en_attente'")->fetchColumn(),
+    'reservations_total' => $pdo->query("SELECT COUNT(*) FROM reservations")->fetchColumn(),
+    'reservations_today' => $pdo->query("SELECT COUNT(*) FROM reservations WHERE date_reservation = CURDATE()")->fetchColumn()
 ];
 
 // --- RÉCUPÉRATION DES LISTES ---
 $web_requests = $pdo->query("SELECT * FROM users_rfid WHERE status = 'pending_validation' ORDER BY created_at DESC");
 $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_validation' ORDER BY status DESC, id DESC LIMIT 50");
+$reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservation DESC, heure_debut DESC LIMIT 50");
 ?>
 
 <!DOCTYPE html>
@@ -197,6 +203,14 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
             <div class="kpi-icon" style="background: rgba(255, 255, 255, 0.1); color:#fff;"><i class="fa-solid fa-users"></i></div>
             <div><p class="kpi-val"><?php echo $stats['total']; ?></p><p class="kpi-label">Total Utilisateurs</p></div>
         </div>
+        <div class="glass kpi-card">
+            <div class="kpi-icon" style="background: rgba(155, 89, 182, 0.2); color:#9b59b6;"><i class="fa-solid fa-calendar-check"></i></div>
+            <div><p class="kpi-val"><?php echo $stats['reservations_total']; ?></p><p class="kpi-label">Réservations Totales</p></div>
+        </div>
+        <div class="glass kpi-card">
+            <div class="kpi-icon" style="background: rgba(52, 152, 219, 0.2); color:#3498db;"><i class="fa-solid fa-calendar-day"></i></div>
+            <div><p class="kpi-val"><?php echo $stats['reservations_today']; ?></p><p class="kpi-label">Aujourd'hui</p></div>
+        </div>
     </div>
 
     <div class="main-grid">
@@ -304,6 +318,62 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- SECTION RÉSERVATIONS -->
+    <div class="glass" style="margin-top: 30px; padding: 30px;">
+        <div class="panel-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+            <h3><i class="fa-solid fa-calendar-days"></i> Gestion des Réservations</h3>
+            <span class="text-dim"><?php echo $stats['reservations_total']; ?> réservation(s) au total</span>
+        </div>
+        
+        <div class="table-container" style="max-height: 500px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Date</th>
+                        <th>Horaire</th>
+                        <th>Motif</th>
+                        <th>Créée le</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while($res = $reservations->fetch()): ?>
+                    <tr>
+                        <td style="font-weight:600;">
+                            <i class="fa-solid fa-user" style="margin-right: 5px; opacity: 0.5;"></i>
+                            <?php echo htmlspecialchars($res['nom_complet']); ?>
+                        </td>
+                        <td>
+                            <span style="background: rgba(155, 89, 182, 0.2); color: #9b59b6; padding: 5px 10px; border-radius: 8px; font-weight: 600;">
+                                <?php echo date('d/m/Y', strtotime($res['date_reservation'])); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <i class="fa-solid fa-clock" style="margin-right: 5px; opacity: 0.5;"></i>
+                            <?php echo substr($res['heure_debut'], 0, 5); ?> - <?php echo substr($res['heure_fin'], 0, 5); ?>
+                        </td>
+                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <?php echo htmlspecialchars($res['motif']); ?>
+                        </td>
+                        <td class="text-dim">
+                            <?php echo date('d/m H:i', strtotime($res['created_at'])); ?>
+                        </td>
+                        <td style="text-align:right;">
+                            <a href="?action=delete_reservation&id=<?php echo $res['id']; ?>" 
+                               class="icon-btn btn-del" 
+                               onclick="return confirm('Supprimer cette réservation ? Le créneau redeviendra disponible.')" 
+                               title="Supprimer">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 
