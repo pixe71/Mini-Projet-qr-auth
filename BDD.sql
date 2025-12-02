@@ -1,7 +1,13 @@
-CREATE DATABASE IF NOT EXISTS super_systeme;
-USE super_systeme;
+-- Base de données pour le système de réservation RFID
+-- Utiliser la base existante 'rfid'
+USE rfid;
 
-CREATE TABLE admins (
+-- Supprimer les tables si elles existent (pour réinitialisation propre)
+DROP TABLE IF EXISTS reservations;
+DROP TABLE IF EXISTS users;
+
+-- Table admins (probablement déjà existante, on ne la recrée pas)
+CREATE TABLE IF NOT EXISTS admins (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
@@ -9,7 +15,8 @@ CREATE TABLE admins (
     a2f_expiration DATETIME DEFAULT NULL
 );
 
-CREATE TABLE users_rfid (
+-- Table users_rfid (probablement déjà existante)
+CREATE TABLE IF NOT EXISTS users_rfid (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nom_complet VARCHAR(100) NOT NULL,
     rfid_uid VARCHAR(50) DEFAULT NULL,
@@ -17,6 +24,7 @@ CREATE TABLE users_rfid (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Table users (nouveaux utilisateurs du système de réservation)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -26,6 +34,7 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Table reservations (système de réservation de créneaux)
 CREATE TABLE reservations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
