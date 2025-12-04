@@ -13,7 +13,12 @@ $is_admin = isset($_SESSION['temp_admin_id']);
 $id = $is_admin ? $_SESSION['temp_admin_id'] : $_SESSION['temp_user_id'];
 $table = $is_admin ? 'admins' : 'users';
 
-$stmt = $pdo->prepare("SELECT username, nom_complet, a2f_token, a2f_expiration FROM $table WHERE id = ?");
+// Sélectionner les colonnes appropriées selon le type d'utilisateur
+if ($is_admin) {
+    $stmt = $pdo->prepare("SELECT username, a2f_token, a2f_expiration FROM admins WHERE id = ?");
+} else {
+    $stmt = $pdo->prepare("SELECT username, nom_complet, a2f_token, a2f_expiration FROM users WHERE id = ?");
+}
 $stmt->execute([$id]);
 $data = $stmt->fetch();
 
@@ -37,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['user_logged'] = true;
                 $_SESSION['user_id'] = $id;
                 $_SESSION['user_username'] = $data['username'];
-                $_SESSION['user_nom_complet'] = $data['nom_complet'];
+                $_SESSION['user_nom_complet'] = $data['nom_complet'] ?? $data['username'];
                 unset($_SESSION['temp_user_id']);
                 unset($_SESSION['temp_user_type']);
                 header("Location: calendar.php");
