@@ -228,12 +228,28 @@ $user_nom = $_SESSION['user_nom_complet'];
         .time-slot.selected {
             background: linear-gradient(135deg, #3a7bd5, #00d2ff);
             border-color: var(--accent);
+            position: relative;
         }
 
-        .time-slot.disabled {
+        .time-slot.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .time-slot.booked {
             opacity: 0.3;
             cursor: not-allowed;
             background: rgba(255, 75, 75, 0.1);
+            border: 1px solid rgba(255, 75, 75, 0.2);
+        }
+
+        .time-slot.booked:hover {
+            background: rgba(255, 75, 75, 0.1);
+            transform: none;
         }
 
         .btn-submit {
@@ -341,7 +357,7 @@ $user_nom = $_SESSION['user_nom_complet'];
                 </div>
 
                 <div class="form-group">
-                    <label>Créneau horaire</label>
+                    <label>Créneaux horaires <small style="opacity: 0.7;">(Vous pouvez sélectionner plusieurs créneaux)</small></label>
                     <div class="time-slots" id="timeSlots"></div>
                     <input type="hidden" id="selectedTime" name="selected_time">
                 </div>
@@ -366,7 +382,7 @@ $user_nom = $_SESSION['user_nom_complet'];
     <script>
         let currentDate = new Date();
         let selectedDate = null;
-        let selectedTime = null;
+        let selectedTimes = []; // Tableau pour stocker plusieurs créneaux
         let bookedSlots = {};
 
         const timeSlots = [
@@ -400,6 +416,7 @@ $user_nom = $_SESSION['user_nom_complet'];
                 container.innerHTML = reservations.map(r => `
                     <div class="reservation-card">
                         <h4>${r.date_reservation} • ${r.heure_debut} - ${r.heure_fin}</h4>
+                        <p><strong>N° ${r.numero_reservation}</strong></p>
                         <p><i class="fa-solid fa-file-lines"></i> ${r.motif}</p>
                         <p style="font-size: 0.85rem; opacity: 0.6;">Créée le ${new Date(r.created_at).toLocaleDateString('fr-FR')}</p>
                     </div>
@@ -456,7 +473,7 @@ $user_nom = $_SESSION['user_nom_complet'];
             
             renderCalendar();
             renderTimeSlots();
-            selectedTime = null;
+            selectedTimes = []; // Réinitialiser les créneaux sélectionnés
             checkFormValidity();
         }
 
@@ -472,10 +489,11 @@ $user_nom = $_SESSION['user_nom_complet'];
 
             container.innerHTML = timeSlots.map(slot => {
                 const isBooked = booked.includes(slot.start);
-                const isSelected = selectedTime === slot.start;
+                const slotKey = `${slot.start}|${slot.end}`;
+                const isSelected = selectedTimes.includes(slotKey);
                 
                 return `
-                    <div class="time-slot ${isBooked ? 'disabled' : ''} ${isSelected ? 'selected' : ''}" 
+                    <div class="time-slot ${isBooked ? 'booked' : ''} ${isSelected ? 'selected' : ''}" 
                          onclick="selectTime('${slot.start}', '${slot.end}', ${isBooked})">
                         ${slot.start} - ${slot.end}
                         ${isBooked ? '<br><small>Réservé</small>' : ''}
@@ -485,10 +503,24 @@ $user_nom = $_SESSION['user_nom_complet'];
         }
 
         function selectTime(start, end, isBooked) {
-            if (isBooked) return;
+            if (isBooked) return; // Bloquer la sélection des créneaux réservés
             
-            selectedTime = start;
-            document.getElementById('selectedTime').value = `${start}-${end}`;
+            const slotKey = `${start}|${end}`;
+            
+            // Toggle: ajouter ou retirer le créneau
+            const index = selectedTimes.indexOf(slotKey);
+            if (index > -1) {
+                selectedTimes.splice(index, 1); // Retirer
+            } else {
+                selectedTimes.push(slotKey); // Ajouter
+            }
+            
+            // Trier les créneaux par heure de début
+            selectedTimes.sort();
+            
+            // Mettre à jour le champ caché avec tous les créneaux séparés par des virgules
+            document.getElementById('selectedTime').value = selectedTimes.join(',');
+            
             renderTimeSlots();
             checkFormValidity();
         }
@@ -496,7 +528,7 @@ $user_nom = $_SESSION['user_nom_complet'];
         function checkFormValidity() {
             const btn = document.getElementById('submitBtn');
             const motif = document.getElementById('motif').value.trim();
-            btn.disabled = !(selectedDate && selectedTime && motif.length > 0);
+            btn.disabled = !(selectedDate && selectedTimes.length > 0 && motif.length > 0);
         }
 
         document.getElementById('motif').addEventListener('input', checkFormValidity);
@@ -514,49 +546,79 @@ $user_nom = $_SESSION['user_nom_complet'];
         document.getElementById('bookingForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const [heureDebut, heureFin] = selectedTime.split('-');
-            const formData = new FormData();
-            formData.append('action', 'create');
-            formData.append('date', selectedDate.toISOString().split('T')[0]);
-            formData.append('heure_debut', heureDebut);
-            formData.append('heure_fin', heureFin);
-            formData.append('motif', document.getElementById('motif').value);
-
-            const response = await fetch('api_reservations.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
             const alertContainer = document.getElementById('alert-container');
-
-            if (result.success) {
-                alertContainer.innerHTML = `
-                    <div class="alert alert-success">
-                        <i class="fa-solid fa-check-circle"></i>
-                        <span>Réservation confirmée avec succès !</span>
-                    </div>
-                `;
-                document.getElementById('motif').value = '';
-                selectedDate = null;
-                selectedTime = null;
-                document.getElementById('selectedDate').value = '';
-                document.getElementById('selectedTime').value = '';
-                loadBookedSlots();
-                loadMyReservations();
-                checkFormValidity();
-            } else {
+            const motif = document.getElementById('motif').value;
+            const dateStr = selectedDate.toISOString().split('T')[0];
+            
+            if (selectedTimes.length === 0) {
                 alertContainer.innerHTML = `
                     <div class="alert alert-error">
                         <i class="fa-solid fa-exclamation-circle"></i>
-                        <span>${result.message || 'Erreur lors de la réservation'}</span>
+                        <span>Veuillez sélectionner au moins un créneau</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Trier les créneaux par heure de début
+            selectedTimes.sort();
+            
+            // Extraire la première heure de début et la dernière heure de fin
+            const firstSlot = selectedTimes[0].split('|');
+            const lastSlot = selectedTimes[selectedTimes.length - 1].split('|');
+            const heureDebut = firstSlot[0];
+            const heureFin = lastSlot[1];
+            
+            // Créer UNE SEULE réservation pour tous les créneaux sélectionnés
+            const formData = new FormData();
+            formData.append('action', 'create');
+            formData.append('date', dateStr);
+            formData.append('heure_debut', heureDebut);
+            formData.append('heure_fin', heureFin);
+            formData.append('motif', motif);
+
+            try {
+                const response = await fetch('api_reservations.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fa-solid fa-check-circle"></i>
+                            <span>Réservation confirmée de ${heureDebut} à ${heureFin} ! N° ${result.numero_reservation}</span>
+                        </div>
+                    `;
+                    document.getElementById('motif').value = '';
+                    selectedDate = null;
+                    selectedTimes = [];
+                    document.getElementById('selectedDate').value = '';
+                    document.getElementById('selectedTime').value = '';
+                    loadBookedSlots();
+                    loadMyReservations();
+                    checkFormValidity();
+                } else {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-error">
+                            <i class="fa-solid fa-exclamation-circle"></i>
+                            <span>${result.message || 'Erreur lors de la réservation'}</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-error">
+                        <i class="fa-solid fa-exclamation-circle"></i>
+                        <span>Erreur de connexion au serveur</span>
                     </div>
                 `;
             }
 
             setTimeout(() => {
                 alertContainer.innerHTML = '';
-            }, 5000);
+            }, 8000);
         });
 
         // Initialisation

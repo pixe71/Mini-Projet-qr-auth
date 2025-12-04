@@ -5,6 +5,16 @@ require 'db.php';
 // --- SÉCURITÉ ---
 if (!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit(); }
 
+// --- DÉSACTIVATION AUTOMATIQUE DES BADGES EXPIRÉS ---
+// Désactiver les badges dont la date de réservation est passée
+$pdo->exec("
+    UPDATE users_rfid u
+    INNER JOIN reservations r ON u.numero_reservation = r.numero_reservation
+    SET u.status = 'expiré'
+    WHERE r.date_reservation < CURDATE() 
+    AND u.status != 'expiré'
+");
+
 // --- LOGIQUE ACTIONS ---
 
 // 1. Validation / Suppression
@@ -251,10 +261,19 @@ $reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservatio
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Nom</th><th>UID Badge</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
+                        <thead><tr><th>N° Réservation</th><th>Nom</th><th>UID Badge</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
                         <tbody>
                             <?php while($u = $active_users->fetch()): ?>
                             <tr>
+                                <td>
+                                    <?php if($u['numero_reservation']): ?>
+                                        <code style="background: rgba(0, 210, 255, 0.2); color: #00d2ff; padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                                            <?php echo htmlspecialchars($u['numero_reservation']); ?>
+                                        </code>
+                                    <?php else: ?>
+                                        <span class="text-dim">---</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($u['nom_complet']); ?></td>
                                 <td>
                                     <?php if($u['rfid_uid']): ?>
@@ -266,8 +285,10 @@ $reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservatio
                                 <td>
                                     <?php if($u['status']=='en_attente'): ?>
                                         <span class="status st-wait"><i class="fa-solid fa-spinner fa-spin"></i> Sync ESP32...</span>
-                                    <?php else: ?>
+                                    <?php elseif($u['status']=='actif'): ?>
                                         <span class="status st-active">ACTIF</span>
+                                    <?php else: ?>
+                                        <span class="status" style="background: rgba(128, 128, 128, 0.2); color: #888;">EXPIRÉ</span>
                                     <?php endif; ?>
                                 </td>
                                 <td style="text-align:right;">
@@ -286,7 +307,7 @@ $reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservatio
 
         <div style="display:flex; flex-direction:column; gap:25px;">
             
-            <div class="glass">
+            <!--<div class="glass">
                 <div class="panel-header">
                     <h3><i class="fa-solid fa-bolt"></i> Ajout Rapide</h3>
                 </div>
@@ -299,7 +320,7 @@ $reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservatio
                         </button>
                     </form>
                 </div>
-            </div>
+            </div>-->
 
             <div class="glass" style="padding:20px;">
                 <h4 style="margin-top:0; color:rgba(255,255,255,0.5);">ÉTAT SYSTÈME</h4>
@@ -328,10 +349,20 @@ $reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservatio
             <span class="text-dim"><?php echo $stats['reservations_total']; ?> réservation(s) au total</span>
         </div>
         
+        <div style="padding: 20px 10px 10px 10px;">
+            <input type="text" 
+                   id="searchReservation" 
+                   class="input-glass" 
+                   placeholder="Rechercher par n° réservation, nom, date ou motif..." 
+                   style="margin-bottom: 0;"
+                   oninput="filterReservations()">
+        </div>
+        
         <div class="table-container" style="max-height: 500px;">
             <table>
                 <thead>
                     <tr>
+                        <th>N° Réservation</th>
                         <th>Utilisateur</th>
                         <th>Date</th>
                         <th>Horaire</th>
@@ -340,9 +371,18 @@ $reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservatio
                         <th style="text-align:right;">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="reservationsTableBody">
                     <?php while($res = $reservations->fetch()): ?>
-                    <tr>
+                    <tr class="reservation-row"
+                        data-numero="<?php echo htmlspecialchars($res['numero_reservation']); ?>"
+                        data-nom="<?php echo htmlspecialchars($res['nom_complet']); ?>"
+                        data-date="<?php echo date('d/m/Y', strtotime($res['date_reservation'])); ?>"
+                        data-motif="<?php echo htmlspecialchars($res['motif']); ?>">
+                        <td>
+                            <code style="background: rgba(0, 210, 255, 0.2); color: #00d2ff; padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                                <?php echo htmlspecialchars($res['numero_reservation']); ?>
+                            </code>
+                        </td>
                         <td style="font-weight:600;">
                             <i class="fa-solid fa-user" style="margin-right: 5px; opacity: 0.5;"></i>
                             <?php echo htmlspecialchars($res['nom_complet']); ?>
@@ -376,6 +416,27 @@ $reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservatio
             </table>
         </div>
     </div>
+
+    <script>
+        function filterReservations() {
+            const searchValue = document.getElementById('searchReservation').value.toLowerCase();
+            const rows = document.querySelectorAll('.reservation-row');
+            
+            rows.forEach(row => {
+                const numero = row.getAttribute('data-numero').toLowerCase();
+                const nom = row.getAttribute('data-nom').toLowerCase();
+                const date = row.getAttribute('data-date').toLowerCase();
+                const motif = row.getAttribute('data-motif').toLowerCase();
+                
+                const match = numero.includes(searchValue) || 
+                             nom.includes(searchValue) || 
+                             date.includes(searchValue) || 
+                             motif.includes(searchValue);
+                
+                row.style.display = match ? '' : 'none';
+            });
+        }
+    </script>
 
 </body>
 </html>

@@ -19,8 +19,9 @@ CREATE TABLE IF NOT EXISTS admins (
 CREATE TABLE IF NOT EXISTS users_rfid (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nom_complet VARCHAR(100) NOT NULL,
+    numero_reservation VARCHAR(20) DEFAULT NULL,
     rfid_uid VARCHAR(50) DEFAULT NULL,
-    status ENUM('en_attente', 'actif') DEFAULT 'en_attente',
+    status ENUM('en_attente', 'actif', 'expiré') DEFAULT 'en_attente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -37,6 +38,7 @@ CREATE TABLE users (
 -- Table reservations (système de réservation de créneaux)
 CREATE TABLE reservations (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_reservation VARCHAR(20) UNIQUE NOT NULL,
     user_id INT NOT NULL,
     nom_complet VARCHAR(100) NOT NULL,
     date_reservation DATE NOT NULL,
