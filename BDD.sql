@@ -32,6 +32,8 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     nom_complet VARCHAR(100) NOT NULL,
     email VARCHAR(100),
+    a2f_token VARCHAR(20) DEFAULT NULL,
+    a2f_expiration DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

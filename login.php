@@ -21,6 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $expiry = date('Y-m-d H:i:s', strtotime('+2 minutes'));
         $pdo->prepare("UPDATE admins SET a2f_token = ?, a2f_expiration = ? WHERE id = ?")->execute([$code, $expiry, $admin['id']]);
         $_SESSION['temp_admin_id'] = $admin['id'];
+        $_SESSION['temp_user_type'] = 'admin'; // Indiquer qu'il s'agit d'un admin
         header("Location: login_2fa.php");
         exit();
     }
@@ -31,11 +32,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_logged'] = true;
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_username'] = $user['username'];
-        $_SESSION['user_nom_complet'] = $user['nom_complet'];
-        header("Location: calendar.php");
+        // Générer code 2FA pour utilisateur
+        $code = strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
+        $expiry = date('Y-m-d H:i:s', strtotime('+2 minutes'));
+        $pdo->prepare("UPDATE users SET a2f_token = ?, a2f_expiration = ? WHERE id = ?")->execute([$code, $expiry, $user['id']]);
+        $_SESSION['temp_user_id'] = $user['id'];
+        $_SESSION['temp_user_type'] = 'user'; // Indiquer qu'il s'agit d'un user
+        header("Location: login_2fa.php");
         exit();
     }
 

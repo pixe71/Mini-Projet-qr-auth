@@ -2,11 +2,18 @@
 session_start();
 require 'db.php';
 
-// Si personne n'est en cours de processus (ni login, ni inscription), on dégage
-if (!isset($_SESSION['temp_admin_id'])) { header("Location: login.php"); exit(); }
+// Vérifier si un utilisateur (admin ou user) est en cours de processus 2FA
+if (!isset($_SESSION['temp_admin_id']) && !isset($_SESSION['temp_user_id'])) { 
+    header("Location: login.php"); 
+    exit(); 
+}
 
-$id = $_SESSION['temp_admin_id'];
-$stmt = $pdo->prepare("SELECT username, a2f_token, a2f_expiration FROM admins WHERE id = ?");
+// Déterminer le type d'utilisateur
+$is_admin = isset($_SESSION['temp_admin_id']);
+$id = $is_admin ? $_SESSION['temp_admin_id'] : $_SESSION['temp_user_id'];
+$table = $is_admin ? 'admins' : 'users';
+
+$stmt = $pdo->prepare("SELECT username, nom_complet, a2f_token, a2f_expiration FROM $table WHERE id = ?");
 $stmt->execute([$id]);
 $data = $stmt->fetch();
 
@@ -16,16 +23,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($data['a2f_token'] && $code_user === $data['a2f_token']) {
         if ($now <= $data['a2f_expiration']) {
-            // SUCCÈS
-            $_SESSION['admin_logged'] = true;
-            $_SESSION['admin_username'] = $data['username'];
-            unset($_SESSION['temp_admin_id']);
-            
-            // Nettoyage du token
-            $clean = $pdo->prepare("UPDATE admins SET a2f_token = NULL WHERE id = ?");
+            // SUCCÈS - Nettoyer le token
+            $clean = $pdo->prepare("UPDATE $table SET a2f_token = NULL WHERE id = ?");
             $clean->execute([$id]);
-
-            header("Location: dashboard.php");
+            
+            if ($is_admin) {
+                $_SESSION['admin_logged'] = true;
+                $_SESSION['admin_username'] = $data['username'];
+                unset($_SESSION['temp_admin_id']);
+                unset($_SESSION['temp_user_type']);
+                header("Location: dashboard.php");
+            } else {
+                $_SESSION['user_logged'] = true;
+                $_SESSION['user_id'] = $id;
+                $_SESSION['user_username'] = $data['username'];
+                $_SESSION['user_nom_complet'] = $data['nom_complet'];
+                unset($_SESSION['temp_user_id']);
+                unset($_SESSION['temp_user_type']);
+                header("Location: calendar.php");
+            }
             exit();
         } else {
             $erreur = "Le code a expiré (Délai de 2 min dépassé).";
