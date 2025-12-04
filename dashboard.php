@@ -5,6 +5,16 @@ require 'db.php';
 // --- SÉCURITÉ ---
 if (!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit(); }
 
+// --- DÉSACTIVATION AUTOMATIQUE DES BADGES EXPIRÉS ---
+// Désactiver les badges dont la date de réservation est passée
+$pdo->exec("
+    UPDATE users_rfid u
+    INNER JOIN reservations r ON u.numero_reservation = r.numero_reservation
+    SET u.status = 'expiré'
+    WHERE r.date_reservation < CURDATE() 
+    AND u.status != 'expiré'
+");
+
 // --- LOGIQUE ACTIONS ---
 
 // 1. Validation / Suppression
@@ -20,6 +30,9 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     } elseif ($action === 'reset') {
         // Remet un badge actif en mode "en_attente" pour le reprogrammer
         $pdo->prepare("UPDATE users_rfid SET status = 'en_attente', rfid_uid = NULL WHERE id = ?")->execute([$id]);
+    } elseif ($action === 'delete_reservation') {
+        // Supprimer une réservation (libère le créneau)
+        $pdo->prepare("DELETE FROM reservations WHERE id = ?")->execute([$id]);
     }
     header("Location: dashboard.php"); exit();
 }
@@ -49,12 +62,15 @@ $stats = [
     'total' => $pdo->query("SELECT COUNT(*) FROM users_rfid")->fetchColumn(),
     'active' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='actif'")->fetchColumn(),
     'web_pending' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='pending_validation'")->fetchColumn(),
-    'esp_queue' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='en_attente'")->fetchColumn()
+    'esp_queue' => $pdo->query("SELECT COUNT(*) FROM users_rfid WHERE status='en_attente'")->fetchColumn(),
+    'reservations_total' => $pdo->query("SELECT COUNT(*) FROM reservations")->fetchColumn(),
+    'reservations_today' => $pdo->query("SELECT COUNT(*) FROM reservations WHERE date_reservation = CURDATE()")->fetchColumn()
 ];
 
 // --- RÉCUPÉRATION DES LISTES ---
 $web_requests = $pdo->query("SELECT * FROM users_rfid WHERE status = 'pending_validation' ORDER BY created_at DESC");
 $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_validation' ORDER BY status DESC, id DESC LIMIT 50");
+$reservations = $pdo->query("SELECT * FROM reservations ORDER BY date_reservation DESC, heure_debut DESC LIMIT 50");
 ?>
 
 <!DOCTYPE html>
@@ -197,6 +213,14 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
             <div class="kpi-icon" style="background: rgba(255, 255, 255, 0.1); color:#fff;"><i class="fa-solid fa-users"></i></div>
             <div><p class="kpi-val"><?php echo $stats['total']; ?></p><p class="kpi-label">Total Utilisateurs</p></div>
         </div>
+        <div class="glass kpi-card">
+            <div class="kpi-icon" style="background: rgba(155, 89, 182, 0.2); color:#9b59b6;"><i class="fa-solid fa-calendar-check"></i></div>
+            <div><p class="kpi-val"><?php echo $stats['reservations_total']; ?></p><p class="kpi-label">Réservations Totales</p></div>
+        </div>
+        <div class="glass kpi-card">
+            <div class="kpi-icon" style="background: rgba(52, 152, 219, 0.2); color:#3498db;"><i class="fa-solid fa-calendar-day"></i></div>
+            <div><p class="kpi-val"><?php echo $stats['reservations_today']; ?></p><p class="kpi-label">Aujourd'hui</p></div>
+        </div>
     </div>
 
     <div class="main-grid">
@@ -237,10 +261,19 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Nom</th><th>UID Badge</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
+                        <thead><tr><th>N° Réservation</th><th>Nom</th><th>UID Badge</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
                         <tbody>
                             <?php while($u = $active_users->fetch()): ?>
                             <tr>
+                                <td>
+                                    <?php if($u['numero_reservation']): ?>
+                                        <code style="background: rgba(0, 210, 255, 0.2); color: #00d2ff; padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                                            <?php echo htmlspecialchars($u['numero_reservation']); ?>
+                                        </code>
+                                    <?php else: ?>
+                                        <span class="text-dim">---</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($u['nom_complet']); ?></td>
                                 <td>
                                     <?php if($u['rfid_uid']): ?>
@@ -252,8 +285,10 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
                                 <td>
                                     <?php if($u['status']=='en_attente'): ?>
                                         <span class="status st-wait"><i class="fa-solid fa-spinner fa-spin"></i> Sync ESP32...</span>
-                                    <?php else: ?>
+                                    <?php elseif($u['status']=='actif'): ?>
                                         <span class="status st-active">ACTIF</span>
+                                    <?php else: ?>
+                                        <span class="status" style="background: rgba(128, 128, 128, 0.2); color: #888;">EXPIRÉ</span>
                                     <?php endif; ?>
                                 </td>
                                 <td style="text-align:right;">
@@ -272,7 +307,7 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
 
         <div style="display:flex; flex-direction:column; gap:25px;">
             
-            <div class="glass">
+            <!--<div class="glass">
                 <div class="panel-header">
                     <h3><i class="fa-solid fa-bolt"></i> Ajout Rapide</h3>
                 </div>
@@ -285,7 +320,7 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
                         </button>
                     </form>
                 </div>
-            </div>
+            </div>-->
 
             <div class="glass" style="padding:20px;">
                 <h4 style="margin-top:0; color:rgba(255,255,255,0.5);">ÉTAT SYSTÈME</h4>
@@ -306,6 +341,102 @@ $active_users = $pdo->query("SELECT * FROM users_rfid WHERE status != 'pending_v
 
         </div>
     </div>
+
+    <!-- SECTION RÉSERVATIONS -->
+    <div class="glass" style="margin-top: 30px; padding: 30px;">
+        <div class="panel-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+            <h3><i class="fa-solid fa-calendar-days"></i> Gestion des Réservations</h3>
+            <span class="text-dim"><?php echo $stats['reservations_total']; ?> réservation(s) au total</span>
+        </div>
+        
+        <div style="padding: 20px 10px 10px 10px;">
+            <input type="text" 
+                   id="searchReservation" 
+                   class="input-glass" 
+                   placeholder="Rechercher par n° réservation, nom, date ou motif..." 
+                   style="margin-bottom: 0;"
+                   oninput="filterReservations()">
+        </div>
+        
+        <div class="table-container" style="max-height: 500px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>N° Réservation</th>
+                        <th>Utilisateur</th>
+                        <th>Date</th>
+                        <th>Horaire</th>
+                        <th>Motif</th>
+                        <th>Créée le</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="reservationsTableBody">
+                    <?php while($res = $reservations->fetch()): ?>
+                    <tr class="reservation-row"
+                        data-numero="<?php echo htmlspecialchars($res['numero_reservation']); ?>"
+                        data-nom="<?php echo htmlspecialchars($res['nom_complet']); ?>"
+                        data-date="<?php echo date('d/m/Y', strtotime($res['date_reservation'])); ?>"
+                        data-motif="<?php echo htmlspecialchars($res['motif']); ?>">
+                        <td>
+                            <code style="background: rgba(0, 210, 255, 0.2); color: #00d2ff; padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                                <?php echo htmlspecialchars($res['numero_reservation']); ?>
+                            </code>
+                        </td>
+                        <td style="font-weight:600;">
+                            <i class="fa-solid fa-user" style="margin-right: 5px; opacity: 0.5;"></i>
+                            <?php echo htmlspecialchars($res['nom_complet']); ?>
+                        </td>
+                        <td>
+                            <span style="background: rgba(155, 89, 182, 0.2); color: #9b59b6; padding: 5px 10px; border-radius: 8px; font-weight: 600;">
+                                <?php echo date('d/m/Y', strtotime($res['date_reservation'])); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <i class="fa-solid fa-clock" style="margin-right: 5px; opacity: 0.5;"></i>
+                            <?php echo substr($res['heure_debut'], 0, 5); ?> - <?php echo substr($res['heure_fin'], 0, 5); ?>
+                        </td>
+                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <?php echo htmlspecialchars($res['motif']); ?>
+                        </td>
+                        <td class="text-dim">
+                            <?php echo date('d/m H:i', strtotime($res['created_at'])); ?>
+                        </td>
+                        <td style="text-align:right;">
+                            <a href="?action=delete_reservation&id=<?php echo $res['id']; ?>" 
+                               class="icon-btn btn-del" 
+                               onclick="return confirm('Supprimer cette réservation ? Le créneau redeviendra disponible.')" 
+                               title="Supprimer">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function filterReservations() {
+            const searchValue = document.getElementById('searchReservation').value.toLowerCase();
+            const rows = document.querySelectorAll('.reservation-row');
+            
+            rows.forEach(row => {
+                const numero = row.getAttribute('data-numero').toLowerCase();
+                const nom = row.getAttribute('data-nom').toLowerCase();
+                const date = row.getAttribute('data-date').toLowerCase();
+                const motif = row.getAttribute('data-motif').toLowerCase();
+                
+                const match = numero.includes(searchValue) || 
+                             nom.includes(searchValue) || 
+                             date.includes(searchValue) || 
+                             motif.includes(searchValue);
+                
+                row.style.display = match ? '' : 'none';
+            });
+        }
+    </script>
 
 </body>
 </html>
