@@ -1,9 +1,9 @@
 <?php
 // db.php - À inclure partout
-$host = 'bdd.luc-tournie.fr';
-$dbname = 'rfid';
-$user = 'rfid'; 
-$pass = 'iv4VEvp&1C7vb5X&Pz5o'; 
+$host = getenv('DB_HOST') ?: 'bdd.luc-tournie.fr';
+$dbname = getenv('DB_NAME') ?: 'rfid';
+$user = getenv('DB_USER') ?: 'rfid'; 
+$pass = getenv('DB_PASS') ?: 'iv4VEvp&1C7vb5X&Pz5o'; 
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
