@@ -1,124 +1,191 @@
-# 🔐 Système de Gestion RFID avec Authentification 2FA
+# Système de Gestion RFID avec Authentification 2FA
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![PHP](https://img.shields.io/badge/PHP-7.4+-purple.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-5.7+-orange.svg)
 
-Système de gestion de badges RFID avec interface web sécurisée (2FA), dashboard administrateur et intégration ESP32.
+## **Page de garde**
 
-🌐 **Démo** : [miniprojet.pixe71.dev](https://miniprojet.pixe71.dev/)
+* **Titre du projet :** Système d'Authentification Sécurisée par QR Code (QR-Auth)
+* **Nom(s) de(s) étudiant(s) :** Luc TOURNIE, Rafaël GALAUP
+* **Classe :** CIEL2
+* **Année scolaire :** 2024-2025
+* **Enseignant référent :** Mr Boudjelaba
 
-
-## 🎯 Vue d'ensemble
-
-Système complet de contrôle d'accès RFID combinant :
-- Interface web glassmorphism moderne
-- Authentification 2FA par QR code
-- API REST pour ESP32
-- Dashboard administrateur temps réel
-
-## ✨ Fonctionnalités
-
-**Interface Publique**
-- Formulaire de demande RFID avec rate limiting (3 req/30s)
-- Protection anti-spam avec cooldown 2 minutes
-
-**Espace Admin**
-- Connexion sécurisée 2FA (timer 2 min)
-- Dashboard : stats temps réel, gestion badges, export CSV
-- KPI : Badges ESP32, actifs, total utilisateurs
-
-## 🏗️ Stack
-
-| Composant | Techno | Version |
-|-----------|--------|---------|
-| Backend | PHP | 7.4+ |
-| BDD | MySQL | 5.7+ |
-| Frontend | HTML/CSS/JS | ES6+ |
-| Design | Glassmorphism | Custom |
-| Icons | Font Awesome | 6.0 |
-
-**Sécurité** : Password hashing, PDO préparé, XSS protection, rate limiting, tokens 2FA
-
-## 📦 Installation
-
-```bash
-version: '3.8'
-
-services:
-  web-test:
-    image: ghcr.io/pixe71/mini-projet-qr-auth:main
-    expose:
-      - "80"
-    environment:
-      - DB_HOST=
-      - DB_NAME=
-      - DB_USER=
-      - DB_PASS=
-
-networks:
-  cloudflared_cloudflare:
-    external: true
 ---
 
-# Config db.php
-$host = 'votre_host';
-$dbname = 'rfid';
-$user = 'votre_user';
-$pass = 'votre_password';
+# **1. Notice d’utilisation**
 
-# Permissions
-chmod 755 -R .
-chmod 644 *.php
-```
+### **1.1. Objectif du produit ou de l’application**
+La page web **QR-Auth** permet à un utilisateur de s'authentifier sur un site web de manière sécurisée avec mot de passe plus QR-Code en double authentification. Le système génère un QR Code unique sur l'écran de l'ordinateur, que l'utilisateur doit scanner via une application mobile dédiée (ou l'appareil photo) pour valider sa connexion.
 
-**Config actuelle (à changer en prod)** :
-```
-Host: bdd.luc-tournie.fr
-User: rfid
-Pass: iv4VEvp&1C7vb5X&Pz5o
-DB: rfid
-```
+### **1.2. Prérequis**
+Pour mettre en place la solution, les éléments suivants sont requis :
+
+- Docker
+- BDD
+
+**Matériel :**
+* Un ordinateur (Serveur/Client Web)
+* Un smartphone avec une caméra fonctionnelle.
+* Une connexion réseau.
+
+**Logiciels :**
+* Un navigateur web récent (Chrome, Firefox...).
+
+### **1.3. Procédure d’utilisation**
+
+1.  **Démarrage du système :**
+    * Lancer le navigateur et se connecter au site.
+    * Le site est installé sur un raspberry
+
+2.  **Connexion (Côté PC) :**
+    * Ouvrez votre navigateur à l'adresse indiquée.
+    * Sur la page d'acceuil cliquer sur Connexion ou Inscription selon le besoin.
+
+3.  **Validation d'Authentification (Côté Smartphone) :**
+    * Scannez le QR Code avec votre téléphone.
+    * Un code apparait
+
+4.  **Accès validé :**
+    * La page sur l'ordinateur se rafraîchit automatiquement et vous donne accès à l'espace utilisateur.
+
+### **1.4. Conseils et remarques**
+* **Expiration :** Le QR Code est valable 120 secondes. Passé ce délai, veuillez rafraîchir la page pour en générer un nouveau.
+
+---
+
+# **2. Fiche(s) de recette**
+
+### **Fiche recette n° 1 : Connexion standard**
+
+* **Objectif du test :** Vérifier le processus complet d'authentification par scan.
+* **Préconditions :** Serveur lancé, smartphone a porté de main.
+* **Étapes du test :**
+    1. Lancer l'application web sur le PC.
+    2. Vérifier l'affichage du QR Code.
+    3. Scanner le code avec le smartphone.
+    4. Valider l'URL sur le smartphone.
+    5. Observer la réaction de la page web sur le PC.
+
+* **Résultat attendu :** La page web nous redirige sur une page de formulaire pour les utilisateurs et un dashboard pour les compte admins (au préalables mis en admin dans la BDD)
+* **Résultat obtenu :** Redirection effectuée avec succès après le scan.
+* **Validation (OK / KO) :** **OK**
+
+---
+
+### **Fiche recette n° 2 : Test de sécurité (Token expiré)**
+
+* **Objectif du test :** Vérifier qu'un QR code n'est plus utilisable après utilisation ou expiration.
+* **Préconditions :** Avoir déjà effectué une connexion valide.
+* **Étapes du test :**
+    1. Utiliser l'historique du téléphone pour rouvrir le lien du QR code précédent.
+    2. Tenter de valider l'authentification à nouveau.
+* **Validation (OK / KO) :** **OK**
+
+---
+
+# **3. Rapport du projet**
+
+## **3.1. Introduction**
+Ce projet s'inscrit dans le cadre de la sécurisation des accès informatiques. L'objectif était de développer une alternative aux mots de passe classiques en utilisant un objet physique (le smartphone) comme clé d'authentification. Nous avons réalisé une application web en Python capable de générer des codes uniques et de synchroniser deux appareils en temps réel.
+en plus de cela une page web pour faire des demandes de création de badge rfid, communiquant avec un dashboard admin via la BDD.
+
+## **3.2. Cahier des charges / Expression du besoin**
+* **Fonctionnalités :**
+    * Génération de QR Codes dynamiques.
+    * Serveur web léger pour gérer les requêtes.
+    * Détection de scan en temps réel (Polling ou WebSockets).
+    * Interface utilisateur simple et responsive.
+    * dashboard bien liée au responsive de l'utilisateur.
+* **Contraintes :**
+    * Utilisation du langage PHP/SQL.
+    * Fonctionnement en réseau local.
 
 
-## 📁 Structure
+## **3.3. Réalisation**
 
-```
-Mini-Projet-qr-auth/
-├── index.php         # Formulaire public demande RFID
-├── login.php         # Connexion admin
-├── login_2fa.php     # Validation QR 2FA
-├── dashboard.php     # Interface admin
-├── register.php      # Inscription admin
-├── db.php            # Config MySQL
-├── api.php           # API ESP32
-└── BDD.sql           # Schéma tables
-```
-## 🗄️ Base de Données
+### **a) Description du travail effectué**
+Nous avons structuré le projet selon une architecture web modulaire adaptée au PHP :
+* **Scripts PHP (Contrôleur) :** Gèrent la logique métier, les routes et les interactions avec la base de données (`index.php`, `login.php`, `dashboard.php`, `api_*.php`).
+* **Vues :** Les interfaces HTML sont générées dynamiquement au sein des fichiers PHP (`index.php`, `dashboard.php`), intégrant les données en temps réel.
+* **Assets (Static) :** Le fichier `style.css` centralise le design (Glassmorphism), tandis que les icônes et polices sont chargées via des CDN.
+---
 
-**Table `admins`** :
-- `id`, `username`, `password` (hash), `a2f_token`, `a2f_expiration`
+## **3.4. Développement & Tests**
 
-**Table `users_rfid`** :
-- `id`, `nom_complet`, `rfid_uid`, `status`, `created_at`
+### **a) Code développé (extraits pertinents)**
 
-**Status** :
-- `en_attente` : En file ESP32
-- `actif` : Badge programmé
+```php
+<?php
+session_start();
+require 'db.php';
 
-```sql
--- Stats par statut
-SELECT status, COUNT(*) FROM users_rfid GROUP BY status;
-```
+// Si personne n'est en cours de processus (ni login, ni inscription), on dégage
+if (!isset($_SESSION['temp_admin_id'])) { header("Location: index.php"); exit(); }
 
-## 🔒 Sécurité
+$id = $_SESSION['temp_admin_id'];
+$stmt = $pdo->prepare("SELECT username, a2f_token, a2f_expiration FROM admins WHERE id = ?");
+$stmt->execute([$id]);
+$data = $stmt->fetch();
 
-**Implémenté** :
-- Password hashing (bcrypt)
-- PDO requêtes préparées
-- XSS protection (htmlspecialchars)
-- Rate limiting (3 req/30s)
-- Tokens 2FA expirables (2 min)
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $code_user = trim($_POST['code']);
+    $now = date('Y-m-d H:i:s');
+
+    if ($data['a2f_token'] && $code_user === $data['a2f_token']) {
+        if ($now <= $data['a2f_expiration']) {
+            // SUCCÈS
+            $_SESSION['admin_logged'] = true;
+            $_SESSION['admin_username'] = $data['username'];
+            unset($_SESSION['temp_admin_id']);
+            
+            // Nettoyage du token
+            $clean = $pdo->prepare("UPDATE admins SET a2f_token = NULL WHERE id = ?");
+            $clean->execute([$id]);
+
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $erreur = "Le code a expiré (Délai de 5 min dépassé).";
+        }
+    } else {
+        $erreur = "Code incorrect.";
+    }
+}
+
+// URL API QR Code
+$qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($data['a2f_token']);
+?>
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sécurité 2FA</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-panel">
+        <h2>Authentification Double</h2>
+        <p>Scannez pour valider l'accès.</p>
+        
+        <div class="qr-box">
+            <img src="<?php echo $qr_url; ?>" width="150">
+        </div>
+
+        <h3 style="letter-spacing: 5px; margin: 10px 0;"><?php echo $data['a2f_token']; ?></h3>
+        <small style="color: #aaa;">Expire à : <?php echo date('H:i:s', strtotime($data['a2f_expiration'])); ?></small>
+
+        <form method="post" style="margin-top:20px;">
+            <?php if(isset($erreur)) echo "<p class='error'>$erreur</p>"; ?>
+            <input type="text" name="code" placeholder="Code QR" required autocomplete="off" style="text-align:center; font-size:1.2em; letter-spacing:2px;">
+            <button type="submit">Valider</button>
+        </form>
+    </div>
+</body>
+</html>
+
 
 ## 👤 Auteur
 
