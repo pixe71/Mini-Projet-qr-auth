@@ -47,12 +47,23 @@ Système complet de contrôle d'accès RFID combinant :
 ## 📦 Installation
 
 ```bash
-# Clone
-git clone https://github.com/pixe71/Mini-Projet-qr-auth.git
-cd Mini-Projet-qr-auth
+version: '3.8'
 
-# Import BDD
-mysql -u root -p < BDD.sql
+services:
+  web-test:
+    image: ghcr.io/pixe71/mini-projet-qr-auth:main
+    expose:
+      - "80"
+    environment:
+      - DB_HOST=
+      - DB_NAME=
+      - DB_USER=
+      - DB_PASS=
+
+networks:
+  cloudflared_cloudflare:
+    external: true
+---
 
 # Config db.php
 $host = 'votre_host';
