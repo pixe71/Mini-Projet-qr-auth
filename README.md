@@ -185,12 +185,12 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . url
     </div>
 </body>
 </html>
-
+```
 
 ## 👤 Auteur
 
-**Pixe71** - [@pixe71](https://github.com/pixe71)
-**rafael12g** - [@rafael12g](https://github.com/rafael12g)
+**Luc Tournie** - [@pixe71](https://github.com/pixe71)
+**Rafael Galaup** - [@rafael12g](https://github.com/rafael12g)
 
 ---
 
