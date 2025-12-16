@@ -7,7 +7,7 @@
 ## **Page de garde**
 
 * **Titre du projet :** Système d'Authentification Sécurisée par QR Code (QR-Auth)
-* **Nom(s) de(s) étudiant(s) :** Luc TOURNIE, Rafaël GALAUP
+* **Nom(s) de(s) étudiant(s) :** **Luc Tournie** - [@pixe71](https://github.com/pixe71), **Rafael Galaup** - [@rafael12g](https://github.com/rafael12g)
 * **Classe :** CIEL2
 * **Année scolaire :** 2024-2025
 * **Enseignant référent :** Mr Boudjelaba
@@ -186,11 +186,6 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . url
 </body>
 </html>
 ```
-
-## 👤 Auteur
-
-**Luc Tournie** - [@pixe71](https://github.com/pixe71)
-**Rafael Galaup** - [@rafael12g](https://github.com/rafael12g)
 
 ---
 
