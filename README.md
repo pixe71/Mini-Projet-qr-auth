@@ -28,10 +28,6 @@ Système complet de contrôle d'accès RFID combinant :
 - Dashboard : stats temps réel, gestion badges, export CSV
 - KPI : Badges ESP32, actifs, total utilisateurs
 
-**API ESP32**
-- GET : Récupération jobs en attente
-- POST : Mise à jour UID badges
-
 ## 🏗️ Stack
 
 | Composant | Techno | Version |
@@ -98,54 +94,6 @@ Mini-Projet-qr-auth/
 ├── api.php           # API ESP32
 └── BDD.sql           # Schéma tables
 ```
-
-## 🔌 API REST
-
-### GET `/api.php` - Job ESP32
-```json
-// Réponse : Job disponible
-{
-  "job": true,
-  "id": 5,
-  "nom": "Thomas Dupont"
-}
-```
-
-### POST `/api.php` - Confirmer Badge
-```json
-// Requête
-{
-  "id": 5,
-  "uid": "A3B2C1D4"
-}
-
-// Réponse
-{
-  "status": "ok"
-}
-```
-
-### Code ESP32 (Arduino)
-```cpp
-#include <WiFi.h>
-#include <HTTPClient.h>
-
-const char* apiUrl = "https://miniprojet.pixe71.dev/api.php";
-
-void loop() {
-  HTTPClient http;
-  http.begin(apiUrl);
-  int code = http.GET();
-  
-  if (code == 200) {
-    String payload = http.getString();
-    // Parser JSON et programmer badge
-  }
-  
-  delay(5000);
-}
-```
-
 ## 🗄️ Base de Données
 
 **Table `admins`** :
@@ -172,45 +120,13 @@ SELECT status, COUNT(*) FROM users_rfid GROUP BY status;
 - Rate limiting (3 req/30s)
 - Tokens 2FA expirables (2 min)
 
-**Production** :
-```apache
-# .htaccess
-Header set X-Frame-Options "SAMEORIGIN"
-Header set X-Content-Type-Options "nosniff"
-Header set X-XSS-Protection "1; mode=block"
-```
-
-## 🐛 Dépannage
-
-**Erreur BDD** :
-```bash
-mysql -h bdd.luc-tournie.fr -u rfid -p
-# Vérifier db.php
-```
-
-**QR Code cassé** :
-```php
-// Tester URL QR
-https://api.qrserver.com/v1/create-qr-code/?size=150&data=TEST
-```
-
-**API timeout** :
-```php
-// api.php - Activer debug
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-```
-
 ## 👤 Auteur
 
 **Pixe71** - [@pixe71](https://github.com/pixe71)
+**rafael12g** - [@rafael12g](https://github.com/rafael12g)
 
 ---
 
 <div align="center">
-
-⭐ **Star ce projet si utile !** ⭐
-
-Made with ❤️ by Pixe71
 
 </div>
