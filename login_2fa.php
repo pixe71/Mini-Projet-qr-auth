@@ -306,7 +306,9 @@ $seconds_remaining = $expiration_timestamp - $now_timestamp;
             <img src="<?php echo $qr_url; ?>" width="150" alt="QR Code 2FA">
         </div>
 
-        <div class="code-display"><?php echo $data['a2f_token']; ?></div>
+        <!--<div class="code-display">
+            // ?php echo $data['a2f_token']; ?>
+        </div>-->
 
         <form method="post">
             <?php if(isset($erreur)): ?>
