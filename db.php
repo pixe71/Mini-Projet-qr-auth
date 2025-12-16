@@ -3,7 +3,7 @@
 $host = getenv('DB_HOST') ?: 'db';
 $dbname = getenv('DB_NAME') ?: 'rfid';
 $user = getenv('DB_USER') ?: 'rfid'; 
-$pass = getenv('DB_PASS') ?: 'iv4VEvp&1C7vb5X&Pz5o'; 
+$pass = getenv('DB_PASS') ?: 'rfid'; 
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
@@ -13,3 +13,4 @@ try {
 }
 
 ?>
+
