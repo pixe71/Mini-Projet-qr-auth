@@ -1,6 +1,6 @@
 <?php
 // Test de connexion base de données
-$host = 'bdd.luc-tournie.fr';
+$host = 'db';
 $dbname = 'rfid';
 $user = 'rfid'; 
 $pass = 'iv4VEvp&1C7vb5X&Pz5o'; 
