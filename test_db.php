@@ -1,14 +1,14 @@
 <?php
 // Test de connexion base de données
-$host = 'db';
-$dbname = 'rfid';
-$user = 'rfid'; 
-$pass = 'iv4VEvp&1C7vb5X&Pz5o'; 
+require_once 'db.php';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    echo "✅ Connexion réussie à la base de données !<br>";
+    // La connexion est déjà établie dans db.php, on vérifie juste si $pdo existe
+    if (isset($pdo)) {
+        echo "✅ Connexion réussie à la base de données !<br>";
+    } else {
+        throw new Exception("L'objet PDO n'a pas été créé.");
+    }
     
     // Tester les tables
     $tables = ['admins', 'users', 'users_rfid', 'reservations'];

@@ -4,11 +4,11 @@
  */
 
 // Configuration de la base de données
-// Utilisation de getenv pour la flexibilité Docker, avec repli sur les valeurs par défaut
+// Utilisation de getenv pour la flexibilité Docker
 define('DB_HOST', getenv('DB_HOST') ?: 'db');
 define('DB_NAME', getenv('DB_NAME') ?: 'rfid');
-define('DB_USER', getenv('DB_USER') ?: 'rfid');
-define('DB_PASS', getenv('DB_PASS') ?: 'iv4VEvp&1C7vb5X&Pz5o');
+define('DB_USER', getenv('DB_USER'));
+define('DB_PASS', getenv('DB_PASS'));
 
 // Démarrage de la session si nécessaire
 if (session_status() === PHP_SESSION_NONE) {
