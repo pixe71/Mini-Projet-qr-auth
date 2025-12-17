@@ -10,7 +10,7 @@
 * **Titre du projet :** Système d'Authentification Sécurisée par QR Code (QR-Auth)
 * **Nom(s) de(s) étudiant(s) :** **Luc Tournie** - [@pixe71](https://github.com/pixe71), **Rafael Galaup** - [@rafael12g](https://github.com/rafael12g)
 * **Classe :** CIEL2
-* **Année scolaire :** 2024-2025
+* **Année scolaire :** 2025-2026
 * **Enseignant référent :** Mr Boudjelaba
 
 ---
