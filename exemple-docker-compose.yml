@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  web-test:
+    image: ghcr.io/pixe71/mini-projet-qr-auth:main
+    container_name: miniprojet
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      - DB_HOST= URL BDD
+      - DB_NAME=nom de la BDD
+      - DB_USER= id de connexion
+      - DB_PASS= mdp de connexion
