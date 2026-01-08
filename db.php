@@ -1,6 +1,6 @@
 <?php
 /**
- * Configuration de la base de données
+ * Configuration de la fffbase de données
  */
 
 // Configuration de la base de données

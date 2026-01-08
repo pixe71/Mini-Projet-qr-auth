@@ -2,7 +2,7 @@
 session_start();
 require 'db.php';
 
-// --- SÉCURITÉ ---
+// --- SÉCURIssssTÉ ---
 if (!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit(); }
 
 // --- DÉSACTIVATION AUTOMATIQUE DES BADGES EXPIRÉS ---
