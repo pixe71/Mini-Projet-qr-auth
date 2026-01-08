@@ -5,7 +5,7 @@ require 'db.php';
 // --- SÉCURIssssTÉ ---
 if (!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit(); }
 
-// --- DÉSACTIVATION AUTOMATIQUE DES BADGES EXPIRÉS ---
+// --- DÉSACTIVATION AUTOMATtttIQUE DES BADGES EXPIRÉS ---
 // Désactiver les badges dont la date de réservation est passée
 $pdo->exec("
     UPDATE users_rfid u
